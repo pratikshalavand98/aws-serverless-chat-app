@@ -1,0 +1,71 @@
+import json
+import boto3
+import uuid
+from datetime import datetime
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('ChatMessages')
+
+def get_reply(message):
+    msg = message.lower()
+
+    if "hello" in msg or "hi" in msg:
+        return "Hi! How can I help you?"
+    elif "aws" in msg:
+        return "AWS is a cloud platform."
+    elif "devops" in msg:
+        return "DevOps helps automate deployment."
+    else:
+        return "I don't understand."
+
+def lambda_handler(event, context):
+    method = event['requestContext']['http']['method']
+
+    if method == "POST":
+        body = json.loads(event['body'])
+        user = body['user']
+        message = body['message']
+
+        timestamp = datetime.now().isoformat()
+
+        reply = get_reply(message)
+
+        # Save user message
+        table.put_item(Item={
+            'messageId': str(uuid.uuid4()),
+            'user': user,
+            'message': message,
+            'timestamp': timestamp
+        })
+
+        # Save bot reply
+        table.put_item(Item={
+            'messageId': str(uuid.uuid4()),
+            'user': user,  # same user filter
+            'message': reply,
+            'timestamp': datetime.now().isoformat(),
+            'type': 'bot'
+        })
+
+        return {
+            'statusCode': 200,
+            'headers': {'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'reply': reply})
+        }
+
+    elif method == "GET":
+        user = event['queryStringParameters']['user']
+
+        response = table.scan()
+
+        # Filter only current user
+        items = [i for i in response['Items'] if i['user'] == user]
+
+        # Sort by timestamp
+        items.sort(key=lambda x: x['timestamp'])
+
+        return {
+            'statusCode': 200,
+            'headers': {'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps(items)
+        }
