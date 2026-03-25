@@ -1,4 +1,3 @@
-<img width="1536" height="1024" alt="Architecture" src="https://github.com/user-attachments/assets/874412cb-9cff-4225-b015-814c9d97f2ee" /># aws-serverless-chat-app
 # 💬 Serverless ChatBot App using AWS
 
 ## 🚀 Project Overview
